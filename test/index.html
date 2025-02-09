@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Test</title>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <!-- Font Awesome ekle -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #messages { 
+            height: 400px; 
+            overflow-y: auto; 
+            border: 1px solid #ccc; 
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .message { 
+            margin: 10px 0; 
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .message-content {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .audio-button {
+            background: none;
+            border: none;
+            color: #2196f3;
+            cursor: pointer;
+            padding: 5px;
+            margin: 0;
+            display: none; /* Varsayılan olarak gizli */
+        }
+        .audio-button:hover {
+            color: #1976d2;
+        }
+        .audio-button.visible {
+            display: inline-block;
+        }
+        .user { 
+            background-color: #e3f2fd;
+            margin-left: 20%;
+        }
+        .assistant { 
+            background-color: #f5f5f5;
+            margin-right: 20%;
+        }
+        .error { 
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .system {
+            background-color: #f9fbe7;
+            font-family: monospace;
+        }
+        button { 
+            margin: 5px; 
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2196f3;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1976d2;
+        }
+        select, input { 
+            margin: 5px; 
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 200px;
+        }
+        #status {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .connected {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .disconnected {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .message.hidden {
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        .message:not(.hidden) {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <h2>Chatbot Test Panel</h2>
+    
+    <!-- Bağlantı Durumu -->
+    <div id="status" class="disconnected">Bağlantı durumu: Bağlı değil</div>
+    
+    <!-- Kontroller -->
+    <div class="controls">
+        <!-- Topic Seçimi -->
+        <select id="topic">
+            <option value="daily-life">Daily Life</option>
+            <option value="travel">Travel</option>
+            <option value="business">Business</option>
+            <option value="hobbies">Hobbies</option>
+            <option value="culture">Culture</option>
+        </select>
+        
+        <!-- Kontrol Butonları -->
+        <button onclick="startChat()">Sohbeti Başlat</button>
+        <button onclick="endChat()">Sohbeti Bitir</button>
+        
+        <!-- Mesaj Gönderme -->
+        <div style="margin-top: 10px;">
+            <input type="text" id="messageInput" placeholder="Mesajınızı yazın...">
+            <button onclick="sendMessage()">Gönder</button>
+        </div>
+        
+        <!-- Ses Testi -->
+        <div style="margin-top: 10px;">
+            <input type="file" id="audioInput" accept="audio/*">
+            <button onclick="sendAudio()">Ses Dosyası Gönder</button>
+            <button id="recordButton" onclick="toggleRecording()" style="background-color: #4CAF50;">
+                <i class="fas fa-microphone"></i> Kayıt
+            </button>
+            <span id="recordingStatus" style="display: none; color: #f44336;">
+                <i class="fas fa-circle"></i> Kaydediliyor...
+            </span>
+        </div>
+    </div>
+    
+    <!-- Mesaj Alanı -->
+    <div id="messages"></div>
+
+    <script>
+        // Socket.IO bağlantısı
+        const socket = io('http://localhost:3000');
+        let currentAudio = null;
+        const audioCache = new Map(); // Ses önbelleği
+
+        // Ses kuyruğu yönetimi için sınıf
+        class AudioQueue {
+            constructor() {
+                this.queue = [];
+                this.isPlaying = false;
+            }
+
+            add(audioContent, messageElement) {
+                this.queue.push({ audioContent, messageElement });
+                if (!this.isPlaying) {
+                    this.playNext();
+                }
+            }
+
+            playNext() {
+                if (this.queue.length === 0) {
+                    this.isPlaying = false;
+                    return;
+                }
+
+                this.isPlaying = true;
+                const { audioContent, messageElement } = this.queue.shift();
+
+                // Önceki sesi durdur
+                if (currentAudio) {
+                    currentAudio.pause();
+                }
+
+                // Yeni sesi çal
+                const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+                currentAudio = audio;
+
+                // Mesajı göster
+                messageElement.classList.remove('hidden');
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                // Ses bittiğinde sonraki sesi çal
+                audio.addEventListener('ended', () => {
+                    this.playNext();
+                });
+
+                audio.play();
+            }
+
+            clear() {
+                this.queue = [];
+                this.isPlaying = false;
+                if (currentAudio) {
+                    currentAudio.pause();
+                }
+            }
+        }
+
+        // Ses kuyruğu instance'ı oluştur
+        const audioQueue = new AudioQueue();
+
+        // Mikrofon kaydı için değişkenler
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        // Bağlantı olayları
+        socket.on('connect', () => {
+            const status = document.getElementById('status');
+            status.textContent = 'Bağlantı durumu: Bağlı';
+            status.className = 'connected';
+        });
+
+        socket.on('disconnect', () => {
+            const status = document.getElementById('status');
+            status.textContent = 'Bağlantı durumu: Bağlı değil';
+            status.className = 'disconnected';
+        });
+
+        // Mesaj olayları
+        socket.on('chat:message', (data) => {
+            if (data.type === 'assistant') {
+                // Eğer zaten bir chunk mesajı varsa onu güncelle
+                const lastMessage = document.querySelector('.message.assistant:last-child');
+                if (lastMessage && lastMessage.getAttribute('data-is-chunk')) {
+                    lastMessage.querySelector('.message-content').textContent = `AI: ${data.content}`;
+                    lastMessage.removeAttribute('data-is-chunk');
+                    
+                    // Ses butonunu göster ve audioId'yi ekle
+                    if (data.audioId) {
+                        const audioButton = lastMessage.querySelector('.audio-button');
+                        audioButton.classList.add('visible');
+                        audioButton.setAttribute('data-audio-id', data.audioId);
+                    }
+                } else {
+                    // Yoksa yeni mesaj ekle
+                    addMessage(`AI: ${data.content}`, data.type, data.audioId);
+                }
+            } else {
+                addMessage(`Siz: ${data.content}`, data.type);
+            }
+        });
+
+        socket.on('chat:chunk', (data) => {
+            const messagesDiv = document.getElementById('messages');
+            let lastMessage = document.querySelector('.message.assistant:last-child');
+            
+            if (lastMessage && lastMessage.getAttribute('data-is-chunk')) {
+                // Mevcut chunk mesajını güncelle
+                lastMessage.querySelector('.message-content').textContent = `AI: ${data.content}`;
+            } else {
+                // Yeni chunk mesajı oluştur
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message assistant';
+                messageElement.setAttribute('data-is-chunk', 'true');
+                messageElement.innerHTML = `
+                    <div class="message-content">AI: ${data.content}</div>
+                    <button class="audio-button" onclick="replayAudio(this)" title="Sesli dinle">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                `;
+                messagesDiv.appendChild(messageElement);
+            }
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        // Ses olayları
+        socket.on('chat:audio', (data) => {
+            // Ses verisini önbelleğe al
+            audioCache.set(data.audioId, data.audioContent);
+            
+            // Yeni mesaj elementi oluştur
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message assistant hidden';
+            messageElement.setAttribute('data-message-id', Date.now());
+            
+            // Mesaj içeriğini ayarla (hasNext varsa üç nokta ekle)
+            messageElement.innerHTML = `
+                <div class="message-content">AI: ${data.message}${data.hasNext ? '...' : ''}</div>
+                <button class="audio-button visible" 
+                        onclick="replayAudio(this)" 
+                        title="Sesli dinle"
+                        data-audio-id="${data.audioId}">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+            `;
+
+            // Eğer bu ikinci parçaysa ve önceki mesajda üç nokta varsa, önceki mesajı güncelle
+            if (!data.isFirstSentence) {
+                const previousMessage = document.querySelector('.message.assistant:nth-last-child(2)');
+                if (previousMessage) {
+                    const content = previousMessage.querySelector('.message-content');
+                    content.textContent = content.textContent.replace('...', '');
+                }
+            }
+
+            // Mesajı ekle
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.appendChild(messageElement);
+
+            // Ses kuyruğuna ekle
+            audioQueue.add(data.audioContent, messageElement);
+        });
+
+        socket.on('chat:analysis', (data) => {
+            addMessage('Konuşma Analizi:', 'system');
+            const analysisMessage = `
+Genel Puan: ${data.analysis.overallScore}/100
+
+Değerlendirme:
+${data.analysis.feedback}`;
+            addMessage(analysisMessage, 'system');
+        });
+
+        socket.on('chat:error', (data) => {
+            addMessage(`Hata: ${data.message}`, 'error');
+        });
+
+        // UI fonksiyonları
+        function startChat() {
+            const topic = document.getElementById('topic').value;
+            socket.emit('chat:start', { topic });
+            addMessage(`Sohbet başlatılıyor... Konu: ${topic}`, 'system');
+        }
+
+        function endChat() {
+            socket.emit('chat:end');
+            addMessage('Sohbet sonlandırılıyor...', 'system');
+            audioCache.clear();
+            audioQueue.clear(); // Ses kuyruğunu temizle
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                socket.emit('chat:message', { message });
+                input.value = '';
+            }
+        }
+
+        async function sendAudio() {
+            const input = document.getElementById('audioInput');
+            const file = input.files[0];
+            
+            if (file) {
+                const formData = new FormData();
+                formData.append('audio', file);
+
+                try {
+                    addMessage('Ses dosyası işleniyor...', 'system');
+                    
+                    const response = await fetch('/api/stt/convert', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        socket.emit('chat:message', { message: data.data.text });
+                        addMessage(`STT Sonucu (${data.data.confidence.toFixed(2)}): ${data.data.text}`, 'system');
+                    } else {
+                        addMessage(`STT Hatası: ${data.message}`, 'error');
+                    }
+                } catch (error) {
+                    addMessage(`STT Hatası: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function playAudio(base64Audio) {
+            if (currentAudio) {
+                currentAudio.pause();
+            }
+            const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
+            currentAudio = audio;
+            audio.play();
+        }
+
+        function replayAudio(button) {
+            const audioId = button.getAttribute('data-audio-id');
+            if (audioId && audioCache.has(audioId)) {
+                // Mevcut ses kuyruğunu temizle
+                audioQueue.clear();
+                // Yeni sesi direkt çal
+                playAudio(audioCache.get(audioId));
+            }
+        }
+
+        function addMessage(message, type, audioId = null) {
+            const messagesDiv = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${type}`;
+            
+            // Mesaj içeriği ve ses butonu için container
+            messageElement.innerHTML = `
+                <div class="message-content">${message}</div>
+                ${type === 'assistant' ? `
+                    <button class="audio-button ${audioId ? 'visible' : ''}" 
+                            onclick="replayAudio(this)" 
+                            title="Sesli dinle"
+                            ${audioId ? `data-audio-id="${audioId}"` : ''}>
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                ` : ''}
+            `;
+            
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Mikrofon kaydını başlat/durdur
+        async function toggleRecording() {
+            const button = document.getElementById('recordButton');
+            const status = document.getElementById('recordingStatus');
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        // Ses verilerini birleştir
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        
+                        // FormData oluştur ve gönder
+                        const formData = new FormData();
+                        formData.append('audio', audioBlob, 'recording.wav');
+
+                        try {
+                            addMessage('Ses kaydı işleniyor...', 'system');
+                            
+                            const response = await fetch('/api/stt/convert', {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            const data = await response.json();
+                            
+                            if (data.status === 'success') {
+                                socket.emit('chat:message', { message: data.data.text });
+                                addMessage(`Konuşmanız: ${data.data.text}`, 'system');
+                            } else {
+                                addMessage(`Ses tanıma hatası: ${data.message}`, 'error');
+                            }
+                        } catch (error) {
+                            addMessage(`Ses tanıma hatası: ${error.message}`, 'error');
+                        }
+
+                        // Stream'i kapat
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    // Kaydı başlat
+                    mediaRecorder.start();
+                    isRecording = true;
+                    button.style.backgroundColor = '#f44336';
+                    button.innerHTML = '<i class="fas fa-stop"></i> Durdur';
+                    status.style.display = 'inline';
+                } catch (error) {
+                    addMessage(`Mikrofon erişim hatası: ${error.message}`, 'error');
+                }
+            } else {
+                // Kaydı durdur
+                mediaRecorder.stop();
+                isRecording = false;
+                button.style.backgroundColor = '#4CAF50';
+                button.innerHTML = '<i class="fas fa-microphone"></i> Kayıt';
+                status.style.display = 'none';
+            }
+        }
+
+        // Enter tuşu ile mesaj gönderme
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html> 
