@@ -47,12 +47,15 @@ try {
     })
   );
 
-  // Test sayfası
+  // Statik dosyaları serve et
+  app.use(express.static(path.join(__dirname, "../test")));
+
+  // Ana sayfa
   app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "../test/index.html"));
   });
 
-  // Routes
+  // API routes
   app.use("/api", routes);
 
   // Error handling
@@ -61,15 +64,9 @@ try {
   // Start server
   const PORT = config.server.port || 3000;
   server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${config.server.env || "development"}`);
-    console.log(
-      `Frontend URL: ${config.server.frontendUrl || "http://localhost:5173"}`
-    );
-
-    if (config.server.env === "development") {
-      console.log(`Test page available at: http://localhost:${PORT}/test`);
-    }
+    logInfo(`Server running on port ${PORT}`);
+    logInfo(`Environment: ${config.server.env}`);
+    logInfo(`Frontend URL: ${config.server.frontendUrl}`);
   });
 } catch (error) {
   console.error("Application startup error:", error);

@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: english-practice-chatbot
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: WS_PORT
+        value: 3001
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GOOGLE_TTS_API_KEY
+        sync: false
+      - key: CHAT_MODEL
+        value: openai/gpt-4o-2024-08-06
+      - key: CHAT_FALLBACK_MODEL
+        value: openai/gpt-4
+      - key: TTS_PROVIDER
+        value: google
+      - key: GOOGLE_TTS_VOICE
+        value: en-US-Standard-H
+      - key: GOOGLE_TTS_LANGUAGE_CODE
+        value: en-US
+      - key: FRONTEND_URL
+        value: https://english-practice-chatbot.onrender.com
