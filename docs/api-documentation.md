@@ -180,6 +180,15 @@ socket.on('chat:analysis', (data) => {
 
 ### 3. Metin-Ses Dönüşümü (TTS)
 
+#### TTS Ayarları
+- **Provider**: `openai` veya `google`
+- **Google TTS Ayarları**:
+  - `languageCode`: `en-US` (varsayılan)
+  - `voice`: `en-US-Standard-H` (varsayılan)
+  - `speakingRate`: `0.85` (sabit)
+  - `pitch`: `0.0` (sabit)
+  - `audioEncoding`: `MP3` (sabit)
+
 #### Metni Sese Çevirme
 - **Endpoint**: `POST /api/tts/convert`
 - **Body**:
@@ -192,6 +201,7 @@ socket.on('chat:analysis', (data) => {
 - **Headers**:
   - `Content-Type`: `audio/mpeg`
   - `X-Audio-ID`: Ses dosyası ID'si
+  - `X-TTS-Provider`: Kullanılan TTS sağlayıcı ('openai' veya 'google')
 
 #### Ses Tekrar Oynatma
 - **Endpoint**: `GET /api/tts/replay/:audioId`

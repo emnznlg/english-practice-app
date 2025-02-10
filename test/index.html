@@ -1,304 +1,568 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot Test</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emin English Speaking App</title>
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
-    <!-- Font Awesome ekle -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 20px; 
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+      :root {
+        --bg-color: #f8f9fa;
+        --text-color: #212529;
+        --chat-bg: white;
+        --border-color: #dee2e6;
+        --user-msg-bg: #e3f2fd;
+        --assistant-msg-bg: #f8f9fa;
+        --system-msg-bg: #fff3cd;
+        --error-msg-bg: #f8d7da;
+        --error-text: #842029;
+        --input-bg: white;
+      }
+
+      [data-theme="dark"] {
+        --bg-color: #212529;
+        --text-color: #f8f9fa;
+        --chat-bg: #343a40;
+        --border-color: #495057;
+        --user-msg-bg: #0d6efd;
+        --assistant-msg-bg: #343a40;
+        --system-msg-bg: #664d03;
+        --error-msg-bg: #842029;
+        --error-text: #f8d7da;
+        --input-bg: #343a40;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+      }
+
+      .chat-container {
+        height: calc(100vh - 200px);
+        display: flex;
+        flex-direction: column;
+      }
+
+      #messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        background-color: var(--chat-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .message {
+        margin: 0.5rem 0;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        max-width: 80%;
+      }
+
+      .user {
+        background-color: var(--user-msg-bg);
+        margin-left: auto;
+        color: var(--text-color);
+      }
+
+      .assistant {
+        background-color: var(--assistant-msg-bg);
+        margin-right: auto;
+        color: var(--text-color);
+      }
+
+      .system {
+        background-color: var(--system-msg-bg);
+        width: 100%;
+        font-family: monospace;
+        color: var(--text-color);
+      }
+
+      .error {
+        background-color: var(--error-msg-bg);
+        color: var(--error-text);
+        width: 100%;
+      }
+
+      .input-area {
+        background-color: var(--input-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        position: sticky;
+        bottom: 0;
+      }
+
+      .form-control {
+        background-color: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+      }
+
+      .form-control::placeholder {
+        color: var(--text-color);
+        opacity: 0.6;
+      }
+
+      .form-select {
+        background-color: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+      }
+
+      .modal-content {
+        background-color: var(--chat-bg);
+        color: var(--text-color);
+      }
+
+      .modal-header,
+      .modal-footer {
+        border-color: var(--border-color);
+      }
+
+      /* Dark mode toggle button */
+      .theme-toggle {
+        background: none;
+        border: none;
+        color: var(--text-color);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+      }
+
+      .theme-toggle:hover {
+        transform: scale(1.1);
+      }
+
+      .audio-button {
+        background: none;
+        border: none;
+        color: #0d6efd;
+        cursor: pointer;
+        padding: 0.25rem;
+        display: none;
+      }
+
+      .audio-button:hover {
+        color: #0a58ca;
+      }
+
+      .audio-button.visible {
+        display: inline-block;
+      }
+
+      #status {
+        transition: all 0.3s ease;
+      }
+
+      .connected {
+        background-color: #d1e7dd !important;
+        color: #0f5132 !important;
+      }
+
+      .disconnected {
+        background-color: #f8d7da !important;
+        color: #842029 !important;
+      }
+
+      .recording-status {
+        animation: blink 1s infinite;
+      }
+
+      @keyframes blink {
+        50% {
+          opacity: 0;
         }
-        #messages { 
-            height: 400px; 
-            overflow-y: auto; 
-            border: 1px solid #ccc; 
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
+      }
+
+      /* Modal Styles */
+      .analysis-modal .modal-body {
+        white-space: pre-line;
+      }
+
+      .score-display {
+        font-size: 2rem;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+
+      /* Mobile Responsive */
+      @media (max-width: 768px) {
+        .chat-container {
+          height: calc(100vh - 250px);
         }
-        .message { 
-            margin: 10px 0; 
-            padding: 10px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+
+        .message {
+          max-width: 90%;
         }
-        .message-content {
-            flex-grow: 1;
-            margin-right: 10px;
+
+        .input-area {
+          padding: 0.5rem;
         }
-        .audio-button {
-            background: none;
-            border: none;
-            color: #2196f3;
-            cursor: pointer;
-            padding: 5px;
-            margin: 0;
-            display: none; /* Varsayılan olarak gizli */
+      }
+
+      /* Analiz beklerken gösterilecek mesaj stili */
+      .analyzing-message {
+        background-color: #cfe2ff;
+        color: #084298;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        text-align: center;
+        margin: 1rem 0;
+        font-weight: bold;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
         }
-        .audio-button:hover {
-            color: #1976d2;
+        50% {
+          opacity: 0.5;
         }
-        .audio-button.visible {
-            display: inline-block;
+        100% {
+          opacity: 1;
         }
-        .user { 
-            background-color: #e3f2fd;
-            margin-left: 20%;
-        }
-        .assistant { 
-            background-color: #f5f5f5;
-            margin-right: 20%;
-        }
-        .error { 
-            background-color: #ffebee;
-            color: #c62828;
-        }
-        .system {
-            background-color: #f9fbe7;
-            font-family: monospace;
-        }
-        button { 
-            margin: 5px; 
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #2196f3;
-            color: white;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #1976d2;
-        }
-        select, input { 
-            margin: 5px; 
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            width: 200px;
-        }
-        #status {
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-        }
-        .connected {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-        }
-        .disconnected {
-            background-color: #ffebee;
-            color: #c62828;
-        }
-        .controls {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
-            background-color: #fafafa;
-        }
-        .message.hidden {
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-        }
-        
-        .message:not(.hidden) {
-            opacity: 1;
-        }
+      }
+
+      /* Footer stili */
+      .footer-text {
+        color: var(--text-color);
+        opacity: 0.6;
+      }
     </style>
-</head>
-<body>
-    <h2>Chatbot Test Panel</h2>
-    
-    <!-- Bağlantı Durumu -->
-    <div id="status" class="disconnected">Bağlantı durumu: Bağlı değil</div>
-    
+  </head>
+  <body class="container-fluid py-4">
+    <!-- Başlık ve Durum -->
+    <div class="row mb-4">
+      <div
+        class="col-12 d-flex align-items-center justify-content-center gap-3 mb-3"
+      >
+        <h2 class="text-center mb-0">English Practice Chatbot</h2>
+        <button class="theme-toggle" onclick="toggleTheme()">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+      <div class="col-12">
+        <div id="status" class="alert disconnected text-center">
+          Bağlantı durumu: Bağlı değil
+        </div>
+      </div>
+    </div>
+
     <!-- Kontroller -->
-    <div class="controls">
-        <!-- Topic Seçimi -->
-        <select id="topic">
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="form-group mb-3">
+          <label for="topic" class="form-label">Konu:</label>
+          <select id="topic" class="form-select">
             <option value="daily-life">Daily Life</option>
             <option value="travel">Travel</option>
             <option value="business">Business</option>
             <option value="hobbies">Hobbies</option>
             <option value="culture">Culture</option>
-        </select>
-        
-        <!-- Kontrol Butonları -->
-        <button onclick="startChat()">Sohbeti Başlat</button>
-        <button onclick="endChat()">Sohbeti Bitir</button>
-        
-        <!-- Mesaj Gönderme -->
-        <div style="margin-top: 10px;">
-            <input type="text" id="messageInput" placeholder="Mesajınızı yazın...">
-            <button onclick="sendMessage()">Gönder</button>
+          </select>
         </div>
-        
-        <!-- Ses Testi -->
-        <div style="margin-top: 10px;">
-            <input type="file" id="audioInput" accept="audio/*">
-            <button onclick="sendAudio()">Ses Dosyası Gönder</button>
-            <button id="recordButton" onclick="toggleRecording()" style="background-color: #4CAF50;">
-                <i class="fas fa-microphone"></i> Kayıt
-            </button>
-            <span id="recordingStatus" style="display: none; color: #f44336;">
-                <i class="fas fa-circle"></i> Kaydediliyor...
-            </span>
+      </div>
+      <div class="col-md-6">
+        <div class="form-group mb-3">
+          <label for="level" class="form-label">Seviye:</label>
+          <select id="level" class="form-select">
+            <option value="beginner">Başlangıç</option>
+            <option value="intermediate">Orta Seviye</option>
+            <option value="advanced">İleri Seviye</option>
+          </select>
         </div>
+      </div>
+      <div class="col-12 text-center">
+        <button onclick="startChat()" class="btn btn-primary me-2">
+          <i class="fas fa-play"></i> Sohbeti Başlat
+        </button>
+        <button onclick="endChat()" class="btn btn-danger">
+          <i class="fas fa-stop"></i> Sohbeti Bitir
+        </button>
+      </div>
     </div>
-    
-    <!-- Mesaj Alanı -->
-    <div id="messages"></div>
+
+    <!-- Chat Alanı -->
+    <div class="chat-container">
+      <div id="messages"></div>
+
+      <!-- Input Alanı -->
+      <div class="input-area">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <div class="input-group">
+              <input
+                type="text"
+                id="messageInput"
+                class="form-control"
+                placeholder="Mesajınızı yazın..."
+              />
+              <button onclick="sendMessage()" class="btn btn-primary">
+                <i class="fas fa-paper-plane"></i> Gönder
+              </button>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex gap-2">
+              <button
+                id="recordButton"
+                onclick="toggleRecording()"
+                class="btn btn-success flex-grow-1"
+              >
+                <i class="fas fa-microphone"></i> Kayıt
+              </button>
+              <span
+                id="recordingStatus"
+                class="recording-status"
+                style="display: none"
+              >
+                <i class="fas fa-circle text-danger"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-3">
+      <small class="footer-text"
+        >Emin tarafından <i class="fas fa-heart text-danger"></i> ile
+        yapıldı</small
+      >
+    </footer>
+
+    <!-- Analiz Modal -->
+    <div class="modal fade analysis-modal" id="analysisModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Konuşma Analizi</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="analyzing-message" style="display: none">
+              Yapay Zeka ile yaptığınız sohbet analiz ediliyor, lütfen
+              bekleyin...
+            </div>
+            <div class="analysis-content-wrapper" style="display: none">
+              <div class="score-display text-primary"></div>
+              <div class="analysis-content"></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Kapat
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS ve Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 
     <script>
-        // Socket.IO bağlantısı
-        const socket = io('http://localhost:3000');
-        let currentAudio = null;
-        const audioCache = new Map(); // Ses önbelleği
+      // Socket.IO bağlantısı
+      const socket = io("http://localhost:3000");
+      let currentAudio = null;
+      const audioCache = new Map();
+      let analysisModal = null;
+      let isRecording = false;
+      let isAITalking = false;
+      let isWaitingForAI = false; // Yapay zeka cevabı beklenirken
 
-        // Ses kuyruğu yönetimi için sınıf
-        class AudioQueue {
-            constructor() {
-                this.queue = [];
-                this.isPlaying = false;
-            }
+      // Modal'ı başlat
+      document.addEventListener("DOMContentLoaded", function () {
+        analysisModal = new bootstrap.Modal(
+          document.getElementById("analysisModal")
+        );
 
-            add(audioContent, messageElement) {
-                this.queue.push({ audioContent, messageElement });
-                if (!this.isPlaying) {
-                    this.playNext();
-                }
-            }
+        // Modal kapatıldığında sayfayı yenile
+        document
+          .getElementById("analysisModal")
+          .addEventListener("hidden.bs.modal", function () {
+            window.location.reload();
+          });
+      });
 
-            playNext() {
-                if (this.queue.length === 0) {
-                    this.isPlaying = false;
-                    return;
-                }
-
-                this.isPlaying = true;
-                const { audioContent, messageElement } = this.queue.shift();
-
-                // Önceki sesi durdur
-                if (currentAudio) {
-                    currentAudio.pause();
-                }
-
-                // Yeni sesi çal
-                const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-                currentAudio = audio;
-
-                // Mesajı göster
-                messageElement.classList.remove('hidden');
-                const messagesDiv = document.getElementById('messages');
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-                // Ses bittiğinde sonraki sesi çal
-                audio.addEventListener('ended', () => {
-                    this.playNext();
-                });
-
-                audio.play();
-            }
-
-            clear() {
-                this.queue = [];
-                this.isPlaying = false;
-                if (currentAudio) {
-                    currentAudio.pause();
-                }
-            }
+      // Ses kuyruğu yönetimi için sınıf
+      class AudioQueue {
+        constructor() {
+          this.queue = [];
+          this.isPlaying = false;
         }
 
-        // Ses kuyruğu instance'ı oluştur
-        const audioQueue = new AudioQueue();
+        add(audioContent, messageElement) {
+          this.queue.push({ audioContent, messageElement });
+          if (!this.isPlaying) {
+            this.playNext();
+          }
+        }
 
-        // Mikrofon kaydı için değişkenler
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let isRecording = false;
+        playNext() {
+          if (this.queue.length === 0) {
+            this.isPlaying = false;
+            return;
+          }
 
-        // Bağlantı olayları
-        socket.on('connect', () => {
-            const status = document.getElementById('status');
-            status.textContent = 'Bağlantı durumu: Bağlı';
-            status.className = 'connected';
-        });
+          this.isPlaying = true;
+          const { audioContent, messageElement } = this.queue.shift();
 
-        socket.on('disconnect', () => {
-            const status = document.getElementById('status');
-            status.textContent = 'Bağlantı durumu: Bağlı değil';
-            status.className = 'disconnected';
-        });
+          // Önceki sesi durdur
+          if (currentAudio) {
+            currentAudio.pause();
+          }
 
-        // Mesaj olayları
-        socket.on('chat:message', (data) => {
-            if (data.type === 'assistant') {
-                // Eğer zaten bir chunk mesajı varsa onu güncelle
-                const lastMessage = document.querySelector('.message.assistant:last-child');
-                if (lastMessage && lastMessage.getAttribute('data-is-chunk')) {
-                    lastMessage.querySelector('.message-content').textContent = `AI: ${data.content}`;
-                    lastMessage.removeAttribute('data-is-chunk');
-                    
-                    // Ses butonunu göster ve audioId'yi ekle
-                    if (data.audioId) {
-                        const audioButton = lastMessage.querySelector('.audio-button');
-                        audioButton.classList.add('visible');
-                        audioButton.setAttribute('data-audio-id', data.audioId);
-                    }
-                } else {
-                    // Yoksa yeni mesaj ekle
-                    addMessage(`AI: ${data.content}`, data.type, data.audioId);
-                }
-            } else {
-                addMessage(`Siz: ${data.content}`, data.type);
+          // Yeni sesi çal
+          const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
+          currentAudio = audio;
+
+          // Mesajı göster
+          messageElement.classList.remove("hidden");
+          const messagesDiv = document.getElementById("messages");
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+          // Ses bittiğinde sonraki sesi çal
+          audio.addEventListener("ended", () => {
+            this.playNext();
+          });
+
+          audio.play();
+        }
+
+        clear() {
+          this.queue = [];
+          this.isPlaying = false;
+          if (currentAudio) {
+            currentAudio.pause();
+          }
+        }
+      }
+
+      // Ses kuyruğu instance'ı oluştur
+      const audioQueue = new AudioQueue();
+
+      // Mikrofon kaydı için değişkenler
+      let mediaRecorder = null;
+      let audioChunks = [];
+
+      // Bağlantı olayları
+      socket.on("connect", () => {
+        const status = document.getElementById("status");
+        status.textContent = "Bağlantı durumu: Bağlı";
+        status.className = "alert connected";
+      });
+
+      socket.on("disconnect", () => {
+        const status = document.getElementById("status");
+        status.textContent = "Bağlantı durumu: Bağlı değil";
+        status.className = "alert disconnected";
+      });
+
+      // Mesaj olayları
+      socket.on("chat:message", (data) => {
+        if (data.type === "assistant") {
+          const lastMessage = document.querySelector(
+            ".message.assistant:last-child"
+          );
+          if (lastMessage && lastMessage.getAttribute("data-is-chunk")) {
+            lastMessage.querySelector(
+              ".message-content"
+            ).textContent = `<strong>AI:</strong> ${data.content}`;
+            lastMessage.removeAttribute("data-is-chunk");
+            if (data.audioId) {
+              const audioButton = lastMessage.querySelector(".audio-button");
+              audioButton.classList.add("visible");
+              audioButton.setAttribute("data-audio-id", data.audioId);
             }
-        });
+          } else {
+            addMessage(
+              `<strong>AI:</strong> ${data.content}`,
+              data.type,
+              data.audioId
+            );
+          }
+        } else {
+          addMessage(`<strong>Siz:</strong> ${data.content}`, data.type);
+        }
+      });
 
-        socket.on('chat:chunk', (data) => {
-            const messagesDiv = document.getElementById('messages');
-            let lastMessage = document.querySelector('.message.assistant:last-child');
-            
-            if (lastMessage && lastMessage.getAttribute('data-is-chunk')) {
-                // Mevcut chunk mesajını güncelle
-                lastMessage.querySelector('.message-content').textContent = `AI: ${data.content}`;
-            } else {
-                // Yeni chunk mesajı oluştur
-                const messageElement = document.createElement('div');
-                messageElement.className = 'message assistant';
-                messageElement.setAttribute('data-is-chunk', 'true');
-                messageElement.innerHTML = `
-                    <div class="message-content">AI: ${data.content}</div>
+      socket.on("chat:chunk", (data) => {
+        const messagesDiv = document.getElementById("messages");
+        let lastMessage = document.querySelector(
+          ".message.assistant:last-child"
+        );
+
+        if (lastMessage && lastMessage.getAttribute("data-is-chunk")) {
+          // Mevcut chunk mesajını güncelle
+          lastMessage.querySelector(
+            ".message-content"
+          ).textContent = `<strong>AI:</strong> ${data.content}`;
+        } else {
+          // Yeni chunk mesajı oluştur
+          const messageElement = document.createElement("div");
+          messageElement.className = "message assistant";
+          messageElement.setAttribute("data-is-chunk", "true");
+          messageElement.innerHTML = `
+                    <div class="message-content"><strong>AI:</strong> ${data.content}</div>
                     <button class="audio-button" onclick="replayAudio(this)" title="Sesli dinle">
                         <i class="fas fa-volume-up"></i>
                     </button>
                 `;
-                messagesDiv.appendChild(messageElement);
-            }
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
+          messagesDiv.appendChild(messageElement);
+        }
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
 
-        // Ses olayları
-        socket.on('chat:audio', (data) => {
-            // Ses verisini önbelleğe al
-            audioCache.set(data.audioId, data.audioContent);
-            
-            // Yeni mesaj elementi oluştur
-            const messageElement = document.createElement('div');
-            messageElement.className = 'message assistant hidden';
-            messageElement.setAttribute('data-message-id', Date.now());
-            
-            // Mesaj içeriğini ayarla (hasNext varsa üç nokta ekle)
-            messageElement.innerHTML = `
-                <div class="message-content">AI: ${data.message}${data.hasNext ? '...' : ''}</div>
+      // Ses olayları
+      socket.on("chat:audio", (data) => {
+        isAITalking = true;
+        isWaitingForAI = false; // Yapay zeka cevap vermeye başladı
+        const recordButton = document.getElementById("recordButton");
+        recordButton.disabled = true;
+        recordButton.style.opacity = "0.5";
+        recordButton.title = "Yapay zeka konuşurken kayıt yapamazsınız";
+
+        // Ses verisini önbelleğe al
+        audioCache.set(data.audioId, data.audioContent);
+
+        // Yeni mesaj elementi oluştur
+        const messageElement = document.createElement("div");
+        messageElement.className = "message assistant hidden";
+        messageElement.setAttribute("data-message-id", Date.now());
+
+        // Mesaj içeriğini ayarla (hasNext varsa üç nokta ekle)
+        messageElement.innerHTML = `
+                <div class="message-content"><strong>AI:</strong> ${
+                  data.message
+                }${data.hasNext ? "..." : ""}</div>
                 <button class="audio-button visible" 
                         onclick="replayAudio(this)" 
                         title="Sesli dinle"
@@ -307,204 +571,246 @@
                 </button>
             `;
 
-            // Eğer bu ikinci parçaysa ve önceki mesajda üç nokta varsa, önceki mesajı güncelle
-            if (!data.isFirstSentence) {
-                const previousMessage = document.querySelector('.message.assistant:nth-last-child(2)');
-                if (previousMessage) {
-                    const content = previousMessage.querySelector('.message-content');
-                    content.textContent = content.textContent.replace('...', '');
+        // Eğer bu ikinci parçaysa ve önceki mesajda üç nokta varsa, önceki mesajı güncelle
+        if (!data.isFirstSentence) {
+          const previousMessage = document.querySelector(
+            ".message.assistant:nth-last-child(2)"
+          );
+          if (previousMessage) {
+            const content = previousMessage.querySelector(".message-content");
+            content.textContent = content.textContent.replace("...", "");
+          }
+        }
+
+        // Mesajı ekle
+        const messagesDiv = document.getElementById("messages");
+        messagesDiv.appendChild(messageElement);
+
+        // Ses kuyruğuna ekle
+        audioQueue.add(data.audioContent, messageElement);
+
+        // Ses bittiğinde kayıt butonunu tekrar aktif et
+        currentAudio.addEventListener("ended", () => {
+          isAITalking = false;
+          isWaitingForAI = false; // Yapay zeka cevabı tamamlandı
+          recordButton.disabled = false;
+          recordButton.style.opacity = "1";
+          recordButton.title = "";
+        });
+      });
+
+      // Analiz olayı
+      socket.on("chat:analysis", (data) => {
+        const modalBody = document.querySelector(".analysis-modal .modal-body");
+        const analyzingMessage = modalBody.querySelector(".analyzing-message");
+        const analysisContent = modalBody.querySelector(
+          ".analysis-content-wrapper"
+        );
+        const scoreDisplay = analysisContent.querySelector(".score-display");
+        const analysisText = analysisContent.querySelector(".analysis-content");
+
+        // Loading ekranını gizle ve analiz içeriğini göster
+        analyzingMessage.style.display = "none";
+        analysisContent.style.display = "block";
+
+        scoreDisplay.textContent = `${data.analysis.overallScore}/100`;
+        analysisText.textContent = data.analysis.feedback;
+      });
+
+      socket.on("chat:error", (data) => {
+        addMessage(`Hata: ${data.message}`, "error");
+      });
+
+      // UI fonksiyonları
+      function startChat() {
+        const topic = document.getElementById("topic").value;
+        const level = document.getElementById("level").value;
+        socket.emit("chat:start", { topic, level });
+        addMessage(
+          `Sohbet başlatılıyor... Konu: ${topic}, Seviye: ${level}`,
+          "system"
+        );
+      }
+
+      function endChat() {
+        socket.emit("chat:end");
+        addMessage("Sohbet sonlandırılıyor...", "system");
+        audioCache.clear();
+        audioQueue.clear(); // Ses kuyruğunu temizle
+
+        // Analiz modalını aç ve loading ekranını göster
+        const modalBody = document.querySelector(".analysis-modal .modal-body");
+        const analyzingMessage = modalBody.querySelector(".analyzing-message");
+        const analysisContent = modalBody.querySelector(
+          ".analysis-content-wrapper"
+        );
+
+        analyzingMessage.style.display = "block";
+        analysisContent.style.display = "none";
+        analysisModal.show();
+      }
+
+      function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const message = input.value.trim();
+
+        if (message) {
+          socket.emit("chat:message", { message });
+          input.value = "";
+        }
+      }
+
+      function playAudio(base64Audio) {
+        if (currentAudio) {
+          currentAudio.pause();
+        }
+        const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
+        currentAudio = audio;
+        audio.play();
+      }
+
+      function replayAudio(button) {
+        const audioId = button.getAttribute("data-audio-id");
+        if (audioId && audioCache.has(audioId)) {
+          // Mevcut ses kuyruğunu temizle
+          audioQueue.clear();
+          // Yeni sesi direkt çal
+          playAudio(audioCache.get(audioId));
+        }
+      }
+
+      function addMessage(message, type, audioId = null) {
+        const messagesDiv = document.getElementById("messages");
+        const messageElement = document.createElement("div");
+        messageElement.className = `message ${type} d-flex align-items-center`;
+
+        messageElement.innerHTML = `
+          <div class="message-content flex-grow-1">${message}</div>
+          ${
+            type === "assistant"
+              ? `
+              <button class="audio-button ${audioId ? "visible" : ""}" 
+                      onclick="replayAudio(this)" 
+                      title="Sesli dinle"
+                      ${audioId ? `data-audio-id="${audioId}"` : ""}>
+                  <i class="fas fa-volume-up"></i>
+              </button>
+          `
+              : ""
+          }
+        `;
+
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      // Mikrofon kaydını başlat/durdur
+      async function toggleRecording() {
+        const button = document.getElementById("recordButton");
+        const status = document.getElementById("recordingStatus");
+
+        if (isAITalking || isWaitingForAI) {
+          return; // Eğer AI konuşuyorsa veya cevap bekleniyorsa kayıt başlatma
+        }
+
+        if (!isRecording) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              audio: true,
+            });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+              audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+              // Ses verilerini birleştir
+              const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+
+              // FormData oluştur ve gönder
+              const formData = new FormData();
+              formData.append("audio", audioBlob, "recording.wav");
+
+              try {
+                addMessage("Ses kaydı işleniyor...", "system");
+
+                const response = await fetch("/api/stt/convert", {
+                  method: "POST",
+                  body: formData,
+                });
+
+                const data = await response.json();
+
+                if (data.status === "success") {
+                  socket.emit("chat:message", { message: data.data.text });
+                  addMessage("Yapay zeka cevap hazırlıyor...", "system");
+                  // Yapay zeka cevabı beklenirken kayıt butonunu devre dışı bırak
+                  isWaitingForAI = true;
+                  const recordButton = document.getElementById("recordButton");
+                  recordButton.disabled = true;
+                  recordButton.style.opacity = "0.5";
+                  recordButton.title = "Yapay zekanın cevabı bekleniyor";
+                } else {
+                  addMessage(`Ses tanıma hatası: ${data.message}`, "error");
                 }
-            }
+              } catch (error) {
+                addMessage(`Ses tanıma hatası: ${error.message}`, "error");
+              }
+            };
 
-            // Mesajı ekle
-            const messagesDiv = document.getElementById('messages');
-            messagesDiv.appendChild(messageElement);
+            mediaRecorder.start();
+            isRecording = true;
+            button.classList.add("recording");
+            status.style.display = "inline-block";
+          } catch (error) {
+            console.error("Mikrofon kaydı başlatılamadı:", error);
+          }
+        } else {
+          mediaRecorder.stop();
+          isRecording = false;
+          button.classList.remove("recording");
+          status.style.display = "none";
+        }
+      }
 
-            // Ses kuyruğuna ekle
-            audioQueue.add(data.audioContent, messageElement);
+      // Enter tuşu ile mesaj gönderme
+      document
+        .getElementById("messageInput")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            sendMessage();
+          }
         });
 
-        socket.on('chat:analysis', (data) => {
-            addMessage('Konuşma Analizi:', 'system');
-            const analysisMessage = `
-Genel Puan: ${data.analysis.overallScore}/100
+      // Dark mode yönetimi
+      function toggleTheme() {
+        const body = document.documentElement;
+        const themeToggle = document.querySelector(".theme-toggle i");
+        const currentTheme = body.getAttribute("data-theme");
 
-Değerlendirme:
-${data.analysis.feedback}`;
-            addMessage(analysisMessage, 'system');
-        });
-
-        socket.on('chat:error', (data) => {
-            addMessage(`Hata: ${data.message}`, 'error');
-        });
-
-        // UI fonksiyonları
-        function startChat() {
-            const topic = document.getElementById('topic').value;
-            socket.emit('chat:start', { topic });
-            addMessage(`Sohbet başlatılıyor... Konu: ${topic}`, 'system');
+        if (currentTheme === "dark") {
+          body.removeAttribute("data-theme");
+          themeToggle.className = "fas fa-moon";
+          localStorage.setItem("theme", "light");
+        } else {
+          body.setAttribute("data-theme", "dark");
+          themeToggle.className = "fas fa-sun";
+          localStorage.setItem("theme", "dark");
         }
+      }
 
-        function endChat() {
-            socket.emit('chat:end');
-            addMessage('Sohbet sonlandırılıyor...', 'system');
-            audioCache.clear();
-            audioQueue.clear(); // Ses kuyruğunu temizle
+      // Sayfa yüklendiğinde tema tercihini kontrol et
+      document.addEventListener("DOMContentLoaded", function () {
+        const savedTheme = localStorage.getItem("theme");
+        const themeToggle = document.querySelector(".theme-toggle i");
+
+        if (savedTheme === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+          themeToggle.className = "fas fa-sun";
         }
-
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            
-            if (message) {
-                socket.emit('chat:message', { message });
-                input.value = '';
-            }
-        }
-
-        async function sendAudio() {
-            const input = document.getElementById('audioInput');
-            const file = input.files[0];
-            
-            if (file) {
-                const formData = new FormData();
-                formData.append('audio', file);
-
-                try {
-                    addMessage('Ses dosyası işleniyor...', 'system');
-                    
-                    const response = await fetch('/api/stt/convert', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    const data = await response.json();
-                    
-                    if (data.status === 'success') {
-                        socket.emit('chat:message', { message: data.data.text });
-                        addMessage(`STT Sonucu (${data.data.confidence.toFixed(2)}): ${data.data.text}`, 'system');
-                    } else {
-                        addMessage(`STT Hatası: ${data.message}`, 'error');
-                    }
-                } catch (error) {
-                    addMessage(`STT Hatası: ${error.message}`, 'error');
-                }
-            }
-        }
-
-        function playAudio(base64Audio) {
-            if (currentAudio) {
-                currentAudio.pause();
-            }
-            const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
-            currentAudio = audio;
-            audio.play();
-        }
-
-        function replayAudio(button) {
-            const audioId = button.getAttribute('data-audio-id');
-            if (audioId && audioCache.has(audioId)) {
-                // Mevcut ses kuyruğunu temizle
-                audioQueue.clear();
-                // Yeni sesi direkt çal
-                playAudio(audioCache.get(audioId));
-            }
-        }
-
-        function addMessage(message, type, audioId = null) {
-            const messagesDiv = document.getElementById('messages');
-            const messageElement = document.createElement('div');
-            messageElement.className = `message ${type}`;
-            
-            // Mesaj içeriği ve ses butonu için container
-            messageElement.innerHTML = `
-                <div class="message-content">${message}</div>
-                ${type === 'assistant' ? `
-                    <button class="audio-button ${audioId ? 'visible' : ''}" 
-                            onclick="replayAudio(this)" 
-                            title="Sesli dinle"
-                            ${audioId ? `data-audio-id="${audioId}"` : ''}>
-                        <i class="fas fa-volume-up"></i>
-                    </button>
-                ` : ''}
-            `;
-            
-            messagesDiv.appendChild(messageElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        // Mikrofon kaydını başlat/durdur
-        async function toggleRecording() {
-            const button = document.getElementById('recordButton');
-            const status = document.getElementById('recordingStatus');
-
-            if (!isRecording) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
-
-                    mediaRecorder.ondataavailable = (event) => {
-                        audioChunks.push(event.data);
-                    };
-
-                    mediaRecorder.onstop = async () => {
-                        // Ses verilerini birleştir
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                        
-                        // FormData oluştur ve gönder
-                        const formData = new FormData();
-                        formData.append('audio', audioBlob, 'recording.wav');
-
-                        try {
-                            addMessage('Ses kaydı işleniyor...', 'system');
-                            
-                            const response = await fetch('/api/stt/convert', {
-                                method: 'POST',
-                                body: formData
-                            });
-
-                            const data = await response.json();
-                            
-                            if (data.status === 'success') {
-                                socket.emit('chat:message', { message: data.data.text });
-                                addMessage(`Konuşmanız: ${data.data.text}`, 'system');
-                            } else {
-                                addMessage(`Ses tanıma hatası: ${data.message}`, 'error');
-                            }
-                        } catch (error) {
-                            addMessage(`Ses tanıma hatası: ${error.message}`, 'error');
-                        }
-
-                        // Stream'i kapat
-                        stream.getTracks().forEach(track => track.stop());
-                    };
-
-                    // Kaydı başlat
-                    mediaRecorder.start();
-                    isRecording = true;
-                    button.style.backgroundColor = '#f44336';
-                    button.innerHTML = '<i class="fas fa-stop"></i> Durdur';
-                    status.style.display = 'inline';
-                } catch (error) {
-                    addMessage(`Mikrofon erişim hatası: ${error.message}`, 'error');
-                }
-            } else {
-                // Kaydı durdur
-                mediaRecorder.stop();
-                isRecording = false;
-                button.style.backgroundColor = '#4CAF50';
-                button.innerHTML = '<i class="fas fa-microphone"></i> Kayıt';
-                status.style.display = 'none';
-            }
-        }
-
-        // Enter tuşu ile mesaj gönderme
-        document.getElementById('messageInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
+      });
     </script>
-</body>
-</html> 
+  </body>
+</html>

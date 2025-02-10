@@ -1,4 +1,5 @@
 const OpenAI = require('openai');
+const textToSpeech = require('@google-cloud/text-to-speech');
 const NodeCache = require('node-cache');
 const { logInfo, logError } = require('../config/logger');
 const config = require('../config');
@@ -11,6 +12,10 @@ class TTSService {
   constructor() {
     this.openai = new OpenAI({
       apiKey: config.api.openai
+    });
+
+    this.googleTTS = new textToSpeech.TextToSpeechClient({
+      apiKey: config.api.googleTTS
     });
   }
 
@@ -38,35 +43,75 @@ class TTSService {
         };
       }
 
-      // OpenAI TTS API'sini çağır
-      const response = await this.openai.audio.speech.create({
-        model: config.tts.model,
-        voice: config.tts.voice,
-        input: text,
-        response_format: 'mp3',
-        speed: 1.0
-      });
+      let audioContent;
+      const provider = config.tts.provider;
 
-      // Buffer'a çevir
-      const buffer = Buffer.from(await response.arrayBuffer());
+      if (provider === 'google') {
+        audioContent = await this._googleTextToSpeech(text);
+      } else {
+        audioContent = await this._openaiTextToSpeech(text);
+      }
 
       // Önbelleğe kaydet
-      audioCache.set(cacheKey, buffer);
+      audioCache.set(cacheKey, audioContent);
 
-      logInfo('Text converted to speech', { 
+      logInfo(`Text converted to speech using ${provider}`, { 
         textLength: text.length,
-        audioSize: buffer.length,
-        cacheKey 
+        audioSize: audioContent.length,
+        cacheKey,
+        provider
       });
 
       return {
-        audioContent: buffer,
+        audioContent,
         audioId: cacheKey
       };
     } catch (error) {
       logError('TTS error', error);
       throw error;
     }
+  }
+
+  /**
+   * OpenAI TTS ile metni sese çevirir
+   * @private
+   * @param {string} text - Sese çevrilecek metin
+   * @returns {Promise<Buffer>}
+   */
+  async _openaiTextToSpeech(text) {
+    const response = await this.openai.audio.speech.create({
+      model: config.tts.openai.model,
+      voice: config.tts.openai.voice,
+      input: text,
+      response_format: 'mp3',
+      speed: 1.0
+    });
+
+    return Buffer.from(await response.arrayBuffer());
+  }
+
+  /**
+   * Google Cloud TTS ile metni sese çevirir
+   * @private
+   * @param {string} text - Sese çevrilecek metin
+   * @returns {Promise<Buffer>}
+   */
+  async _googleTextToSpeech(text) {
+    const request = {
+      input: { text },
+      voice: {
+        languageCode: config.tts.google.languageCode,
+        name: config.tts.google.voice
+      },
+      audioConfig: {
+        audioEncoding: config.tts.google.audioEncoding,
+        speakingRate: config.tts.google.speakingRate,
+        pitch: config.tts.google.pitch
+      }
+    };
+
+    const [response] = await this.googleTTS.synthesizeSpeech(request);
+    return Buffer.from(response.audioContent);
   }
 
   /**
@@ -99,7 +144,7 @@ class TTSService {
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash;
     }
-    return `tts_${hash}`;
+    return `tts_${config.tts.provider}_${hash}`;
   }
 }
 
