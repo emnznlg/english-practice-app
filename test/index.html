@@ -390,7 +390,7 @@
 
     <script>
       // Socket.IO bağlantısı
-      const socket = io("http://localhost:3000");
+      const socket = io(window.location.origin);
       let currentAudio = null;
       const audioCache = new Map();
       let analysisModal = null;
