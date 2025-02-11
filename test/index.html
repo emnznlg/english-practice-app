@@ -606,14 +606,12 @@
         const analysisContent = modalBody.querySelector(
           ".analysis-content-wrapper"
         );
-        const scoreDisplay = analysisContent.querySelector(".score-display");
         const analysisText = analysisContent.querySelector(".analysis-content");
 
         // Loading ekranını gizle ve analiz içeriğini göster
         analyzingMessage.style.display = "none";
         analysisContent.style.display = "block";
 
-        scoreDisplay.textContent = `${data.analysis.overallScore}/100`;
         analysisText.textContent = data.analysis.feedback;
       });
 

@@ -179,17 +179,6 @@ class ChatService {
         }
 
         analysis = JSON.parse(content);
-
-        // Gerekli alanları kontrol et
-        if (!analysis.overallScore || !analysis.feedback) {
-          throw new Error("Analiz sonucu eksik bilgi içeriyor");
-        }
-
-        // Puan aralığını kontrol et (0-100)
-        analysis.overallScore = Math.min(
-          100,
-          Math.max(0, analysis.overallScore)
-        );
       } catch (parseError) {
         logError("Analiz parse hatası", parseError);
         // Varsayılan bir analiz döndür

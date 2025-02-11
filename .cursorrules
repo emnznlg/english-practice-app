@@ -1,0 +1,38 @@
+# General Information About the Application
+
+* The application is a simple chatbot that runs on the web.
+* Its purpose is to help users practice speaking English.
+
+# How the Application Works
+
+* When the application is first opened, the user must select a topic. After choosing a topic, the user starts a conversation with the AI on that topic. The AI initiates the conversation, and the dialogue should continue interactively. The user can end the conversation at any time. Once the conversation is over, a simple conversation analysis is shown to the user. This analysis should include the accuracy of the words used, the flow of the conversation, and the use of grammar.
+* AI messages during the conversation should be automatically read aloud. The user should have the option to replay the message if desired.
+* Messages from both parties should be displayed on the screen in written form.
+
+# Points to Consider
+
+* To create a natural conversation environment, it is necessary for requests to be sent to the relevant services quickly and for the responses to be displayed promptly. Therefore, technologies like streaming and websockets should be used.
+* Particularly when using the Text To Speech service, appropriate methods should be applied to minimize waiting times.
+* The user interface should be designed in a simple, mobile-first approach. A black-and-white color palette is preferred.
+* Loading animations should be used while waiting for responses from the API and websocket.
+* First divide project into small parts, document each part and develop once at a time. I want you to develop backend and frontend together one feature at a times.
+
+# Technologies
+
+* For the frontend: Vite + React + TS + Tailwind
+* For the backend: NodeJS + JS + Express
+
+# Services
+
+* For Text To Speech: OpenAI TTS
+* For Speech To Text: OpenAI Whisper
+* For AI Chat: OpenRouter
+
+**NOTE**: I will provide all the API keys when you need.
+
+**NOTE**: The project structures have already been created. There is no need to start from scratch.
+
+# Lessons
+
+* Terminal commands such as creating folders and installing packages should be left to the user, all other coding should be done by the AI.
+
