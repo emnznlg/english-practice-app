@@ -245,140 +245,275 @@
         color: var(--text-color);
         opacity: 0.6;
       }
+
+      /* Yükleme mesajı stili */
+      .loading-message {
+        background-color: var(--chat-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin: 1rem 0;
+        text-align: center;
+        animation: pulse 1.5s infinite;
+      }
+
+      .loading-message i {
+        margin-right: 0.5rem;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body class="container-fluid py-4">
-    <!-- Başlık ve Durum -->
-    <div class="row mb-4">
-      <div
-        class="col-12 d-flex align-items-center justify-content-center gap-3 mb-3"
-      >
-        <h2 class="text-center mb-0">English Practice Chatbot</h2>
-        <button class="theme-toggle" onclick="toggleTheme()">
-          <i class="fas fa-moon"></i>
-        </button>
-      </div>
-      <div class="col-12">
-        <div id="status" class="alert disconnected text-center">
-          Bağlantı durumu: Bağlı değil
-        </div>
-      </div>
-    </div>
-
-    <!-- Kontroller -->
-    <div class="row mb-4">
-      <div class="col-md-6">
-        <div class="form-group mb-3">
-          <label for="topic" class="form-label">Konu:</label>
-          <select id="topic" class="form-select">
-            <option value="daily-life">Daily Life</option>
-            <option value="travel">Travel</option>
-            <option value="business">Business</option>
-            <option value="hobbies">Hobbies</option>
-            <option value="culture">Culture</option>
-          </select>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="form-group mb-3">
-          <label for="level" class="form-label">Seviye:</label>
-          <select id="level" class="form-select">
-            <option value="beginner">Başlangıç</option>
-            <option value="intermediate">Orta Seviye</option>
-            <option value="advanced">İleri Seviye</option>
-          </select>
-        </div>
-      </div>
-      <div class="col-12 text-center">
-        <button onclick="startChat()" class="btn btn-primary me-2">
-          <i class="fas fa-play"></i> Sohbeti Başlat
-        </button>
-        <button onclick="endChat()" class="btn btn-danger">
-          <i class="fas fa-stop"></i> Sohbeti Bitir
-        </button>
-      </div>
-    </div>
-
-    <!-- Chat Alanı -->
-    <div class="chat-container">
-      <div id="messages"></div>
-
-      <!-- Input Alanı -->
-      <div class="input-area">
-        <div class="row g-3">
-          <div class="col-md-8">
-            <div class="input-group">
-              <input
-                type="text"
-                id="messageInput"
-                class="form-control"
-                placeholder="Mesajınızı yazın..."
-              />
-              <button onclick="sendMessage()" class="btn btn-primary">
-                <i class="fas fa-paper-plane"></i> Gönder
-              </button>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="d-flex gap-2">
-              <button
-                id="recordButton"
-                onclick="toggleRecording()"
-                class="btn btn-success flex-grow-1"
-              >
-                <i class="fas fa-microphone"></i> Kayıt
-              </button>
-              <span
-                id="recordingStatus"
-                class="recording-status"
-                style="display: none"
-              >
-                <i class="fas fa-circle text-danger"></i>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="text-center py-3">
-      <small class="footer-text"
-        >Emin tarafından <i class="fas fa-heart text-danger"></i> ile
-        yapıldı</small
-      >
-    </footer>
-
-    <!-- Analiz Modal -->
-    <div class="modal fade analysis-modal" id="analysisModal" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Konuşma Analizi</h5>
+    <!-- Başlangıç Ekranı -->
+    <div id="startScreen" class="text-center">
+      <h1 class="mb-4">English Practice App</h1>
+      <div class="col-md-6 mx-auto">
+        <!-- Mod Seçimi -->
+        <div class="mb-4">
+          <h3>Mod Seçimi</h3>
+          <div class="btn-group w-100" role="group">
             <button
               type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <div class="analyzing-message" style="display: none">
-              Yapay Zeka ile yaptığınız sohbet analiz ediliyor, lütfen
-              bekleyin...
-            </div>
-            <div class="analysis-content-wrapper" style="display: none">
-              <div class="score-display text-primary"></div>
-              <div class="analysis-content"></div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
+              class="btn btn-outline-primary"
+              onclick="selectMode('chat')"
             >
-              Kapat
+              Sohbet Modu
             </button>
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              onclick="selectMode('roleplay')"
+            >
+              Roleplay Modu
+            </button>
+          </div>
+        </div>
+
+        <!-- Sohbet Modu Ayarları -->
+        <div id="chatSettings" class="mb-4" style="display: none">
+          <div class="card">
+            <div class="card-body">
+              <h4>Sohbet Ayarları</h4>
+
+              <div class="mb-3">
+                <label class="form-label">Seviye</label>
+                <select class="form-select" id="chatLevelSelect">
+                  <option value="beginner">Başlangıç</option>
+                  <option value="intermediate">Orta Seviye</option>
+                  <option value="advanced">İleri Seviye</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Konu</label>
+                <select class="form-select" id="topicSelect">
+                  <option value="favorite_shows">
+                    En Sevdiğin Diziler ve Film Karakterleri
+                  </option>
+                  <option value="dream_vacation">Hayalindeki Tatil Yeri</option>
+                  <option value="childhood_memories">Çocukluk Anıları</option>
+                  <option value="future_goals">
+                    Gelecekteki Hedefler ve Hayaller
+                  </option>
+                  <option value="favorite_foods">
+                    En Sevdiğin Yemekler ve Mutfaklar
+                  </option>
+                  <option value="pets_and_animals">
+                    Evcil Hayvanlar ve Hayvan Sevgisi
+                  </option>
+                  <option value="funny_experiences">
+                    Komik Deneyimler ve Anılar
+                  </option>
+                  <option value="relationships">
+                    Aile ve Arkadaşlık İlişkileri
+                  </option>
+                  <option value="interesting_hobbies">
+                    İlginç Hobiler ve Yeni Şeyler Öğrenme
+                  </option>
+                  <option value="social_media">
+                    Sosyal Medya ve İnternet Alışkanlıkları
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Roleplay Modu Ayarları -->
+        <div id="roleplaySettings" class="mb-4" style="display: none">
+          <div class="card">
+            <div class="card-body">
+              <h4>Roleplay Ayarları</h4>
+
+              <div class="mb-3">
+                <label class="form-label">Seviye</label>
+                <select class="form-select" id="roleplayLevelSelect">
+                  <option value="beginner">Başlangıç</option>
+                  <option value="intermediate">Orta Seviye</option>
+                  <option value="advanced">İleri Seviye</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Karakter</label>
+                <select class="form-select" id="roleplaySelect">
+                  <option value="taxi_driver">Taksi Şoförü</option>
+                  <option value="cashier">Market Kasiyeri</option>
+                  <option value="bank_clerk">Banka Memuru</option>
+                  <option value="waiter">Restoran Garsonu</option>
+                  <option value="hotel_receptionist">
+                    Otel Resepsiyonisti
+                  </option>
+                  <option value="doctor">Doktor</option>
+                  <option value="librarian">Kütüphaneci</option>
+                  <option value="fitness_trainer">Fitness Eğitmeni</option>
+                  <option value="travel_agent">Seyahat Acentesi</option>
+                  <option value="it_support">Bilgisayar Teknisyeni</option>
+                  <option value="real_estate_agent">Emlakçı</option>
+                  <option value="teacher">Öğretmen</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Başlatma Butonu -->
+        <button class="btn btn-primary btn-lg w-100" onclick="startChat()">
+          Sohbeti Başlat
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat Ekranı -->
+    <div id="chatScreen" style="display: none">
+      <!-- Başlık ve Durum -->
+      <div class="row mb-4">
+        <div
+          class="col-12 d-flex align-items-center justify-content-center gap-3 mb-3"
+        >
+          <h2 class="text-center mb-0">English Practice Chatbot</h2>
+          <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+          </button>
+        </div>
+        <div class="col-12">
+          <div id="status" class="alert disconnected text-center">
+            Bağlantı durumu: Bağlı değil
+          </div>
+        </div>
+      </div>
+
+      <!-- Kontrol Butonları -->
+      <div class="row mb-4">
+        <div class="col-12 text-center">
+          <button onclick="endChat()" class="btn btn-danger">
+            <i class="fas fa-stop"></i> Sohbeti Bitir
+          </button>
+        </div>
+      </div>
+
+      <!-- Chat Alanı -->
+      <div class="chat-container">
+        <div id="messages"></div>
+
+        <!-- Input Alanı -->
+        <div class="input-area">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <div class="input-group">
+                <input
+                  type="text"
+                  id="messageInput"
+                  class="form-control"
+                  placeholder="Mesajınızı yazın..."
+                />
+                <button onclick="sendMessage()" class="btn btn-primary">
+                  <i class="fas fa-paper-plane"></i> Gönder
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="d-flex gap-2">
+                <button
+                  id="recordButton"
+                  onclick="toggleRecording()"
+                  class="btn btn-success flex-grow-1"
+                >
+                  <i class="fas fa-microphone"></i> Kayıt
+                </button>
+                <span
+                  id="recordingStatus"
+                  class="recording-status"
+                  style="display: none"
+                >
+                  <i class="fas fa-circle text-danger"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="text-center py-3">
+        <small class="footer-text"
+          >Emin tarafından <i class="fas fa-heart text-danger"></i> ile
+          yapıldı</small
+        >
+      </footer>
+
+      <!-- Analiz Modal -->
+      <div class="modal fade analysis-modal" id="analysisModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Konuşma Analizi</h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <div class="analyzing-message" style="display: none">
+                Yapay Zeka ile yaptığınız sohbet analiz ediliyor, lütfen
+                bekleyin...
+              </div>
+              <div class="analysis-content-wrapper" style="display: none">
+                <div class="score-display text-primary"></div>
+                <div class="analysis-content"></div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Kapat
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -397,6 +532,7 @@
       let isRecording = false;
       let isAITalking = false;
       let isWaitingForAI = false; // Yapay zeka cevabı beklenirken
+      let selectedMode = "chat";
 
       // Modal'ı başlat
       document.addEventListener("DOMContentLoaded", function () {
@@ -620,14 +756,63 @@
       });
 
       // UI fonksiyonları
+      function selectMode(mode) {
+        selectedMode = mode;
+
+        // Aktif butonu vurgula
+        document.querySelectorAll(".btn-group .btn").forEach((btn) => {
+          btn.classList.remove("active", "btn-primary");
+          btn.classList.add("btn-outline-primary");
+        });
+        event.target.classList.remove("btn-outline-primary");
+        event.target.classList.add("active", "btn-primary");
+
+        // İlgili ayarları göster/gizle
+        document.getElementById("chatSettings").style.display =
+          mode === "chat" ? "block" : "none";
+        document.getElementById("roleplaySettings").style.display =
+          mode === "roleplay" ? "block" : "none";
+      }
+
       function startChat() {
-        const topic = document.getElementById("topic").value;
-        const level = document.getElementById("level").value;
-        socket.emit("chat:start", { topic, level });
-        addMessage(
-          `Sohbet başlatılıyor... Konu: ${topic}, Seviye: ${level}`,
-          "system"
-        );
+        const level =
+          selectedMode === "chat"
+            ? document.getElementById("chatLevelSelect").value
+            : document.getElementById("roleplayLevelSelect").value;
+
+        let options = {
+          mode: selectedMode,
+          level: level,
+        };
+
+        if (selectedMode === "chat") {
+          options.topic = document.getElementById("topicSelect").value;
+        } else {
+          options.roleplayOption =
+            document.getElementById("roleplaySelect").value;
+        }
+
+        // Ekranları değiştir
+        document.getElementById("startScreen").style.display = "none";
+        document.getElementById("chatScreen").style.display = "block";
+
+        // Yükleme mesajını göster
+        const messagesDiv = document.getElementById("messages");
+        const loadingMessage = document.createElement("div");
+        loadingMessage.className = "loading-message";
+        loadingMessage.innerHTML = `
+          <i class="fas fa-circle-notch"></i>
+          Yapay zeka ilk mesajı hazırlıyor...
+        `;
+        messagesDiv.appendChild(loadingMessage);
+
+        // Socket.IO bağlantısını başlat
+        socket.emit("chat:start", options);
+
+        // İlk mesaj geldiğinde yükleme mesajını kaldır
+        socket.once("chat:audio", () => {
+          loadingMessage.remove();
+        });
       }
 
       function endChat() {
@@ -808,6 +993,11 @@
           document.documentElement.setAttribute("data-theme", "dark");
           themeToggle.className = "fas fa-sun";
         }
+      });
+
+      // Sayfa yüklendiğinde chat modunu seç
+      document.addEventListener("DOMContentLoaded", function () {
+        selectMode("chat");
       });
     </script>
   </body>

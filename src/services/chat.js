@@ -22,38 +22,47 @@ class ChatService {
   /**
    * Chat oturumu başlatır
    * @param {string} sessionId - Oturum ID'si
-   * @param {string} topic - Seçilen konu
-   * @param {string} level - İngilizce seviyesi (beginner, intermediate, advanced)
+   * @param {Object} options - Oturum seçenekleri
+   * @param {string} options.mode - Mod ('chat' veya 'roleplay')
+   * @param {string} options.topic - Seçilen konu (chat modu için)
+   * @param {string} options.roleplayOption - Seçilen roleplay karakteri (roleplay modu için)
+   * @param {string} options.level - İngilizce seviyesi
    * @returns {Promise<string>} - İlk mesaj
    */
-  async startSession(sessionId, topic, level) {
+  async startSession(sessionId, options) {
     try {
+      const { mode, topic, roleplayOption, level } = options;
+
       // Oturum bilgilerini oluştur
       const session = {
+        mode,
         topic,
+        roleplayOption,
         level,
         messages: [],
         startTime: Date.now(),
         messageCount: 0,
       };
 
-      // Başlangıç promptunu hazırla
-      const systemPrompt = prompts.chat.system(topic, level);
+      // Moda göre başlangıç promptunu hazırla
+      let systemPrompt;
+      let initialAssistantMessage;
+
+      if (mode === "roleplay") {
+        systemPrompt = prompts.chat.roleplay(level, roleplayOption);
+        initialAssistantMessage = `Hi! I'm your ${roleplayOption}. How can I help you today?`;
+      } else {
+        systemPrompt = prompts.chat.system(topic, level);
+        initialAssistantMessage = "Let's start our conversation about " + topic;
+      }
 
       // İlk mesajı al
       const response = await this.openai.chat.completions.create({
         model: config.chat.defaultModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "assistant",
-            content: "Let's start our conversation about " + topic,
-          },
-        ],
+        messages: [{ role: "system", content: systemPrompt }],
         stream: false,
         temperature: config.chat.temperature,
         max_tokens: 200,
-        // Yedek modeller
         models: [config.chat.defaultModel, config.chat.fallbackModel],
       });
 
@@ -71,7 +80,9 @@ class ChatService {
 
       logInfo("Chat session started", {
         sessionId,
+        mode,
         topic,
+        roleplayOption,
         level,
         initialMessageLength: initialMessage.length,
       });
