@@ -840,6 +840,22 @@
         if (message) {
           socket.emit("chat:message", { message });
           input.value = "";
+
+          // Yükleme mesajını göster
+          const messagesDiv = document.getElementById("messages");
+          const loadingMessage = document.createElement("div");
+          loadingMessage.className = "loading-message";
+          loadingMessage.innerHTML = `
+            <i class="fas fa-circle-notch"></i>
+            Yapay zeka cevap hazırlıyor...
+          `;
+          messagesDiv.appendChild(loadingMessage);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+          // İlk mesaj geldiğinde yükleme mesajını kaldır
+          socket.once("chat:audio", () => {
+            loadingMessage.remove();
+          });
         }
       }
 
@@ -928,7 +944,23 @@
 
                 if (data.status === "success") {
                   socket.emit("chat:message", { message: data.data.text });
-                  addMessage("Yapay zeka cevap hazırlıyor...", "system");
+
+                  // Yükleme mesajını göster
+                  const messagesDiv = document.getElementById("messages");
+                  const loadingMessage = document.createElement("div");
+                  loadingMessage.className = "loading-message";
+                  loadingMessage.innerHTML = `
+                    <i class="fas fa-circle-notch"></i>
+                    Yapay zeka cevap hazırlıyor...
+                  `;
+                  messagesDiv.appendChild(loadingMessage);
+                  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                  // İlk mesaj geldiğinde yükleme mesajını kaldır
+                  socket.once("chat:audio", () => {
+                    loadingMessage.remove();
+                  });
+
                   // Yapay zeka cevabı beklenirken kayıt butonunu devre dışı bırak
                   isWaitingForAI = true;
                   const recordButton = document.getElementById("recordButton");

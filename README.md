@@ -4,16 +4,72 @@
 
 ## 🚀 Özellikler
 
-- 🤖 OpenRouter API ile gelişmiş AI sohbet deneyimi
+### Temel Özellikler
+
+- 🎭 İki farklı mod: Sohbet ve Roleplay
+- 🎯 Kullanıcı seviyesine göre uyarlanmış konuşmalar (Başlangıç, Orta, İleri)
+- 🔄 WebSocket ile gerçek zamanlı iletişim
+- 📊 Detaylı konuşma analizi ve geri bildirim
+- 🌓 Koyu/Açık tema desteği
+- 📱 Mobil uyumlu tasarım
+
+### Sohbet Modu Özellikleri
+
+- 🗣️ 10 farklı ilgi çekici konuda sohbet imkanı:
+  - En Sevdiğin Diziler ve Film Karakterleri
+  - Hayalindeki Tatil Yeri
+  - Çocukluk Anıları
+  - Gelecekteki Hedefler ve Hayaller
+  - En Sevdiğin Yemekler ve Mutfaklar
+  - Evcil Hayvanlar ve Hayvan Sevgisi
+  - Komik Deneyimler ve Anılar
+  - Aile ve Arkadaşlık İlişkileri
+  - İlginç Hobiler ve Yeni Şeyler Öğrenme
+  - Sosyal Medya ve İnternet Alışkanlıkları
+
+### Roleplay Modu Özellikleri
+
+- 👥 12 farklı karakter ile pratik yapma imkanı:
+  - Taksi Şoförü
+  - Market Kasiyeri
+  - Banka Memuru
+  - Restoran Garsonu
+  - Otel Resepsiyonisti
+  - Doktor
+  - Kütüphaneci
+  - Fitness Eğitmeni
+  - Seyahat Acentesi
+  - Bilgisayar Teknisyeni
+  - Emlakçı
+  - Öğretmen
+
+### Ses Özellikleri
+
 - 🎙️ OpenAI Whisper ile ses tanıma
 - 🔊 OpenAI TTS ile doğal ses sentezi
-- 🔄 WebSocket ile gerçek zamanlı iletişim
-- 📊 Konuşma analizi ve geri bildirim
+- 🔁 Ses mesajlarını tekrar oynatma
 - 💾 Ses önbellekleme
-- 🌐 REST API endpoints
-- 📝 Detaylı loglama sistemi
+- ⏱️ Ses kuyruğu yönetimi
+
+### AI Özellikleri
+
+- 🤖 OpenRouter API ile gelişmiş AI sohbet deneyimi
+- 📝 Kullanıcı seviyesine uygun yanıtlar
+- 🔄 Streaming yanıtlar
+- 🎯 Doğal konuşma akışı
+- 📊 Türkçe konuşma analizi ve geri bildirim
+
+### Kullanıcı Deneyimi
+
+- ⌛ Yükleme animasyonları
+- 🔄 Gerçek zamanlı durum göstergeleri
+- 🎯 Sezgisel arayüz
+- 📱 Responsive tasarım
+- 🌈 Tema desteği
 
 ## 🛠️ Teknolojiler
+
+### Backend
 
 - Node.js
 - Express.js
@@ -21,6 +77,21 @@
 - OpenAI SDK
 - Winston Logger
 - Node Cache
+
+### Frontend
+
+- Vite
+- React
+- TypeScript
+- Tailwind CSS
+- Socket.IO Client
+- Bootstrap 5
+
+### Servisler
+
+- OpenRouter API (Chat)
+- OpenAI Whisper API (STT)
+- OpenAI TTS API (TTS)
 
 ## 📋 Gereksinimler
 
@@ -32,12 +103,14 @@
 ## 🔧 Kurulum
 
 1. Repo'yu klonlayın:
+
 ```bash
 git clone [repo-url]
 cd backend
 ```
 
 2. Bağımlılıkları yükleyin:
+
 ```bash
 npm install
 # veya
@@ -45,6 +118,7 @@ yarn install
 ```
 
 3. `.env` dosyasını oluşturun:
+
 ```env
 # Server Configuration
 PORT=3000
@@ -66,6 +140,7 @@ FRONTEND_URL=http://localhost:5173
 ```
 
 4. Uygulamayı başlatın:
+
 ```bash
 # Geliştirme modu
 npm run dev
@@ -81,6 +156,7 @@ backend/
 ├── src/
 │   ├── config/           # Konfigürasyon dosyaları
 │   │   ├── index.js     # Ana config
+│   │   ├── prompts.js   # AI promptları
 │   │   └── logger.js    # Winston logger config
 │   ├── middleware/      # Express middleware'leri
 │   │   ├── auth.js      # Kimlik doğrulama
@@ -88,8 +164,7 @@ backend/
 │   ├── routes/          # API route'ları
 │   │   ├── chat.js      # Chat endpoints
 │   │   ├── stt.js       # Speech-to-Text endpoints
-│   │   ├── tts.js       # Text-to-Speech endpoints
-│   │   └── topics.js    # Konu endpoints
+│   │   └── tts.js       # Text-to-Speech endpoints
 │   ├── services/        # İş mantığı servisleri
 │   │   ├── chat.js      # Chat servisi
 │   │   ├── socket.js    # WebSocket yönetimi
@@ -101,16 +176,16 @@ backend/
 └── docs/              # Dokümantasyon
 ```
 
-## 📚 API Dokümantasyonu
+## 🚀 Deployment
 
-Detaylı API dokümantasyonu için [API Documentation](../docs/api-documentation.md) dosyasına bakın.
+Uygulama Render üzerinde deploy edilebilir:
 
-## 🧪 Test
-
-Test sayfasına erişmek için:
-```
-http://localhost:3000/test
-```
+1. Render hesabı oluşturun
+2. GitHub reposunu bağlayın
+3. Web servisi oluşturun:
+   - Build command: `cd backend && npm install`
+   - Start command: `cd backend && npm start`
+   - Environment variables ayarlayın
 
 ## 🔒 Güvenlik
 
@@ -123,37 +198,21 @@ http://localhost:3000/test
 ## 📊 Loglama
 
 Loglar `logs/` dizininde tutulur:
+
 - `error.log`: Hata logları
 - `combined.log`: Tüm loglar
 - `exceptions.log`: Yakalanmamış hatalar
 
-## ⚙️ Ortam Değişkenleri
-
-| Değişken | Açıklama | Varsayılan |
-|----------|-----------|------------|
-| PORT | Sunucu portu | 3000 |
-| NODE_ENV | Çalışma ortamı | development |
-| OPENAI_API_KEY | OpenAI API anahtarı | - |
-| OPENROUTER_API_KEY | OpenRouter API anahtarı | - |
-| CHAT_MODEL | Varsayılan chat modeli | google/gemini-2.0-flash-001 |
-| CHAT_FALLBACK_MODEL | Yedek chat modeli | openai/gpt-4 |
-| FRONTEND_URL | Frontend URL'i | http://localhost:5173 |
-
-## 🚦 Servis Durumu
-
-Servis durumunu kontrol etmek için:
-```
-GET /api/health
-```
-
 ## 🐛 Hata Ayıklama
 
 1. WebSocket bağlantı sorunları:
+
    - CORS ayarlarını kontrol edin
    - Port numaralarını doğrulayın
    - Frontend URL'ini kontrol edin
 
 2. API hataları:
+
    - API anahtarlarının doğruluğunu kontrol edin
    - İstek limitlerini kontrol edin
    - Log dosyalarını inceleyin
@@ -173,4 +232,4 @@ MIT
 2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
 3. Commit'leyin (`git commit -m 'feat: add amazing feature'`)
 4. Push'layın (`git push origin feature/amazing-feature`)
-5. Pull Request açın 
+5. Pull Request açın
