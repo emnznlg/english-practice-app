@@ -680,11 +680,10 @@
       // Ses olayları
       socket.on("chat:audio", (data) => {
         isAITalking = true;
-        isWaitingForAI = false; // Yapay zeka cevap vermeye başladı
+        isWaitingForAI = false;
         const recordButton = document.getElementById("recordButton");
-        recordButton.disabled = true;
-        recordButton.style.opacity = "0.5";
-        recordButton.title = "Yapay zeka konuşurken kayıt yapamazsınız";
+        recordButton.style.opacity = "1";
+        recordButton.title = "";
 
         // Ses verisini önbelleğe al
         audioCache.set(data.audioId, data.audioContent);
@@ -724,15 +723,6 @@
 
         // Ses kuyruğuna ekle
         audioQueue.add(data.audioContent, messageElement);
-
-        // Ses bittiğinde kayıt butonunu tekrar aktif et
-        currentAudio.addEventListener("ended", () => {
-          isAITalking = false;
-          isWaitingForAI = false; // Yapay zeka cevabı tamamlandı
-          recordButton.disabled = false;
-          recordButton.style.opacity = "1";
-          recordButton.title = "";
-        });
       });
 
       // Analiz olayı
@@ -908,10 +898,6 @@
         const button = document.getElementById("recordButton");
         const status = document.getElementById("recordingStatus");
 
-        if (isAITalking || isWaitingForAI) {
-          return; // Eğer AI konuşuyorsa veya cevap bekleniyorsa kayıt başlatma
-        }
-
         if (!isRecording) {
           try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -961,12 +947,12 @@
                     loadingMessage.remove();
                   });
 
-                  // Yapay zeka cevabı beklenirken kayıt butonunu devre dışı bırak
+                  // Yapay zeka cevabı beklenirken kayıt butonunu devre dışı bırakma kodlarını kaldırdık
                   isWaitingForAI = true;
                   const recordButton = document.getElementById("recordButton");
-                  recordButton.disabled = true;
-                  recordButton.style.opacity = "0.5";
-                  recordButton.title = "Yapay zekanın cevabı bekleniyor";
+                  // recordButton.disabled = true;  // Bu satırı tamamen kaldırıyoruz
+                  // recordButton.style.opacity = "0.5"; // Bu satırı tamamen kaldırıyoruz
+                  // recordButton.title = "Yapay zekanın cevabı bekleniyor"; // Bu satırı tamamen kaldırıyoruz
                 } else {
                   addMessage(`Ses tanıma hatası: ${data.message}`, "error");
                 }
